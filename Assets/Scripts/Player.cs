@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    // private RigidBody2D body;
-    // Start is called before the first frame update
+
     private Rigidbody2D body;
+
+    // Start is called before the first frame update
     void Start()
     {
         body = GetComponent<Rigidbody2D>();
