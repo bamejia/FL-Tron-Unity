@@ -1,6 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
+using Utils;
 
 
 namespace Players 
@@ -10,29 +10,13 @@ namespace Players
 
         [SerializeField] private float speed;
         private Rigidbody2D body;
-        private KeyCode _lastKey;
-        private KeyCode LastKey
-        {
-            get
-            {
-                return _lastKey;
-            }
-            set
-            {
-                if (value != _lastKey)
-                {
-                    prevKey = _lastKey;
-                }
-                _lastKey = value;
-            }
-        }
-
-        private KeyCode prevKey;
+        private ListSet<KeyCode> inputs;
 
         // Start is called before the first frame update
         void Awake()
         {
             body = GetComponent<Rigidbody2D>();
+            inputs = new();
         }
 
         // Update is called once per frame
@@ -41,38 +25,50 @@ namespace Players
             //float xVel = Input.GetAxis("Horizontal") * speed;
             //float yVel = Input.GetAxis("Vertical") * speed;
 
-            LastKey = Input.GetKeyDown(KeyCode.UpArrow) ? KeyCode.UpArrow
+            KeyCode key = getLastPressedDownKey();
+            if (key != KeyCode.None)
+                inputs.Add(key);
+            removeReleasedKeys();
+
+            int lastIndex = inputs.Count - 1;
+            if (lastIndex >= 0)
+                body.velocity = getVelocity(inputs[lastIndex]);
+        }
+
+        /// <summary>
+        /// Any keys that are released, are immediately removed from inputs
+        /// </summary>
+        private void removeReleasedKeys()
+        {
+            if (Input.GetKeyUp(KeyCode.UpArrow))
+            {
+                inputs.Remove(KeyCode.UpArrow);
+            }
+            else if (Input.GetKeyUp(KeyCode.LeftArrow))
+            {
+                inputs.Remove(KeyCode.LeftArrow);
+            }
+            else if (Input.GetKeyUp(KeyCode.RightArrow))
+            {
+                inputs.Remove(KeyCode.RightArrow);
+            }
+            else if (Input.GetKeyUp(KeyCode.DownArrow))
+            {
+                inputs.Remove(KeyCode.DownArrow);
+            }
+        }
+
+        /// <summary>
+        /// Will retrieve the last key which had a key down event, not necessarily key that is still pressed down
+        /// </summary>
+        /// <returns>Last key to have a key down event</returns>
+        private KeyCode getLastPressedDownKey()
+        {
+            return Input.GetKeyDown(KeyCode.UpArrow) ? KeyCode.UpArrow
                 : Input.GetKeyDown(KeyCode.DownArrow) ? KeyCode.DownArrow
                 : Input.GetKeyDown(KeyCode.LeftArrow) ? KeyCode.LeftArrow
                 : Input.GetKeyDown(KeyCode.RightArrow) ? KeyCode.RightArrow
-                : LastKey;
-
-            if (Input.GetKeyUp(prevKey))
-            {
-                prevKey = LastKey;
-            }
-
-            Vector2 newVelocity;
-            if (Input.GetKey(LastKey))
-            {
-                newVelocity = getVelocity(LastKey);
-            }
-            else if (!Input.anyKey)
-            {
-                newVelocity = body.velocity;
-                // Uncomment to stop when no keys are pressed
-                //curKey = KeyCode.None;
-            }
-            else if (Input.GetKey(prevKey))
-            {
-                newVelocity = getVelocity(prevKey);
-            }
-            else
-            {
-                newVelocity = getVelocity(LastKey);
-            }
-
-            body.velocity = newVelocity;
+                : KeyCode.None;
         }
 
         /// <summary>
