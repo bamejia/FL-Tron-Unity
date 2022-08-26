@@ -46,7 +46,7 @@ namespace Players
             }
             
 
-        // This might be better for performance? but the above is more flexible
+        // TODO This might be better for performance? but the above is more flexible. Delete if unnecessary
             //if (Input.GetKeyUp(KeyCode.UpArrow))
             //{
             //    inputs.Remove(KeyCode.UpArrow);
