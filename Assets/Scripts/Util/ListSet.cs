@@ -14,10 +14,16 @@ namespace Players
                 base.Add(item);
         }
 
-        public new void Remove(T item)
+        public new bool Remove(T item)
         {
             if (set.Remove(item))
-                base.Remove(item);
+                return base.Remove(item);
+            return false;
+        }
+
+        public new bool Contains(T item)
+        {
+            return set.Contains(item);
         }
     }
 }
