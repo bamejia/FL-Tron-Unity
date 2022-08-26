@@ -1,83 +1,99 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+
+namespace Players 
 {
-  
-    [SerializeField] private float speed;
-    private Rigidbody2D body;
-    private KeyCode _lastKey;
-    private KeyCode LastKey
+    public class Player : MonoBehaviour
     {
-        get
+
+        [SerializeField] private float speed;
+        private Rigidbody2D body;
+        private ListSet<KeyCode> inputs;
+        private KeyCode[] p1MovementKeys = new KeyCode[] {
+            KeyCode.UpArrow,
+            KeyCode.DownArrow,
+            KeyCode.LeftArrow,
+            KeyCode.RightArrow
+        };
+
+        // Start is called before the first frame update
+        void Awake()
         {
-            return _lastKey;
+            body = GetComponent<Rigidbody2D>();
+            inputs = new();
         }
-        set
+
+        // Update is called once per frame
+        void Update()
         {
-            if (value != _lastKey)
+            addPressedMovementKeys(p1MovementKeys);
+            removeReleasedMovementKeys(p1MovementKeys);
+
+            int lastIndex = inputs.Count - 1;
+            if (lastIndex >= 0)
+                body.velocity = getVelocity(inputs[lastIndex]);
+        }
+
+        /// <summary>
+        /// Any keys that are released, are immediately removed from inputs
+        /// </summary>
+        private void removeReleasedMovementKeys(KeyCode[] movementKeys)
+        {
+            foreach (KeyCode key in movementKeys)
             {
-                prevKey = _lastKey;
+                if (Input.GetKeyUp(key))
+                    inputs.Remove(key);
             }
-            _lastKey = value;
+            
+
+        // This might be better for performance? but the above is more flexible
+            //if (Input.GetKeyUp(KeyCode.UpArrow))
+            //{
+            //    inputs.Remove(KeyCode.UpArrow);
+            //}
+            //if (Input.GetKeyUp(KeyCode.LeftArrow))
+            //{
+            //    inputs.Remove(KeyCode.LeftArrow);
+            //}
+            //if (Input.GetKeyUp(KeyCode.RightArrow))
+            //{
+            //    inputs.Remove(KeyCode.RightArrow);
+            //}
+            //if (Input.GetKeyUp(KeyCode.DownArrow))
+            //{
+            //    inputs.Remove(KeyCode.DownArrow);
+            //}
         }
-    }
-    
-    private KeyCode prevKey;
 
-    // Start is called before the first frame update
-    void Awake()
-    {
-        body = GetComponent<Rigidbody2D>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        //float xVel = Input.GetAxis("Horizontal") * speed;
-        //float yVel = Input.GetAxis("Vertical") * speed;
-
-        LastKey = Input.GetKeyDown(KeyCode.UpArrow) ? KeyCode.UpArrow
-            : Input.GetKeyDown(KeyCode.DownArrow) ? KeyCode.DownArrow
-            : Input.GetKeyDown(KeyCode.LeftArrow) ? KeyCode.LeftArrow
-            : Input.GetKeyDown(KeyCode.RightArrow) ? KeyCode.RightArrow
-            : LastKey;
-
-        KeyCode curKey;
-        if (Input.GetKey(LastKey))
+        /// <summary>
+        /// Will retrieve the last key which had a key down event, not necessarily key that is still pressed down
+        /// </summary>
+        /// <returns>Last key to have a key down event</returns>
+        private void addPressedMovementKeys(KeyCode[] movementKeys)
         {
-            curKey = LastKey;
-        }
-        else if (!Input.anyKey)
-        {
-            curKey = LastKey;
-            // Uncomment to stop when no keys are pressed
-            //curKey = KeyCode.None;
-        }
-        else
-        {
-            curKey = prevKey;
+            foreach (KeyCode key in movementKeys)
+            {
+                if (Input.GetKeyDown(key))
+                    inputs.Add(key);
+            }
         }
 
-        body.velocity = getVelocity(curKey);
-        //body.velocity = new Vector2(xVel, yVel);
+        /// <summary>
+        /// Given the input key, will return the current velocity of the player
+        /// </summary>
+        /// <param name="keyCode">Input key by the user</param>
+        /// <returns>A vector that respresents the velocity being traveled</returns>
+        private Vector2 getVelocity(KeyCode keyCode)
+        {
+            float xVel = keyCode == KeyCode.LeftArrow ? -speed
+                : keyCode == KeyCode.RightArrow ? speed
+                : 0;
+            float yVel = keyCode == KeyCode.UpArrow ? speed
+                : keyCode == KeyCode.DownArrow ? -speed
+                : 0;
+
+            return new Vector2(xVel, yVel);
+        }
     }
 
-    /// <summary>
-    /// Given the input key, will return the current velocity of the player
-    /// </summary>
-    /// <param name="keyCode">Input key by the user</param>
-    /// <returns>A vector that respresents the velocity being traveled</returns>
-    private Vector2 getVelocity(KeyCode keyCode)
-    {
-        float xVel = keyCode == KeyCode.LeftArrow ? -speed
-            : keyCode == KeyCode.RightArrow ? speed
-            : 0;
-        float yVel = keyCode == KeyCode.UpArrow ? speed
-            : keyCode == KeyCode.DownArrow ? -speed
-            : 0;
-
-        return new Vector2(xVel, yVel);
-    }
 }
