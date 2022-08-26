@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 
-namespace Utils
+namespace Players
 {
     public class ListSet<T> : List<T>
     {
+        
         private readonly HashSet<T> set = new();
         public new void Add(T item)
         {
@@ -12,7 +14,7 @@ namespace Utils
                 base.Add(item);
         }
 
-        public void Delete(T item)
+        public new void Remove(T item)
         {
             if (set.Remove(item))
                 base.Remove(item);
