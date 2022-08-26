@@ -1,7 +1,11 @@
+using System;
+using System.Linq;
 using UnityEngine;
+using System.Collections.Generic;
 
 
-namespace Players 
+
+namespace Players
 {
     public class Player : MonoBehaviour
     {
@@ -9,13 +13,9 @@ namespace Players
         [SerializeField] private float speed;
         private Rigidbody2D body;
         private ListSet<KeyCode> inputs;
-        private KeyCode lastActiveMovementKey = KeyCode.None;
-        private KeyCode[] p1MovementKeys = new KeyCode[] {
-            KeyCode.UpArrow,
-            KeyCode.DownArrow,
-            KeyCode.LeftArrow,
-            KeyCode.RightArrow
-        };
+        private Direction direction;
+        private IDictionary<KeyCode, Direction> movementKeyBind;
+        private KeyCode[] movementKeys;
 
         private Logger logger = new Logger(Debug.unityLogger.logHandler);
 
@@ -24,25 +24,49 @@ namespace Players
         {
             body = GetComponent<Rigidbody2D>();
             inputs = new();
+
+            direction = Direction.NONE;
+            movementKeyBind = Player1Constants.MovementKeyBind;
+            movementKeys = movementKeyBind.Keys.ToArray();
         }
 
         // Update is called once per frame
         void Update()
         {
-            AddPressedMovementKeys(p1MovementKeys);
-            RemoveReleasedMovementKeys(p1MovementKeys);
+            AddPressedMovementKeys(this.movementKeys);
+            RemoveReleasedMovementKeys(this.movementKeys);
             //logger.Log(string.Format("Last active pressed key: {0}", lastActiveMovementKey));
 
             int lastIndex = inputs.Count - 1;
             if (lastIndex >= 0)
             {
-                KeyCode activeKey = inputs[lastIndex];
-                if (GetReverseInput(activeKey) is KeyCode reverseKey
-                    && !inputs.Contains(reverseKey)
-                    && (inputs.Count == 1 ? reverseKey != lastActiveMovementKey : true))
-                    body.velocity = GetVelocity(activeKey);
+                Direction newDir = getDirection(inputs[lastIndex], this.movementKeyBind);
+                if (newDir.GetOppositeDirection() != this.direction)
+                {
+                    body.velocity = GetVelocity(newDir);
+                    this.direction = newDir;
+                }
+
             }
         }
+
+        /// <summary>
+        /// Retrieves the current direction of the player based on the key input and the player movement mapping
+        /// </summary>
+        /// <param name="key">The movement key that is currently active</param>
+        /// <param name="movementKeyBind">The movement key mapping</param>
+        /// <returns>The direction associated with the active key</returns>
+        private Direction getDirection(KeyCode key, IDictionary<KeyCode, Direction> movementKeyBind)
+        {
+            if (movementKeyBind is null)
+                throw new ArgumentNullException(nameof(movementKeyBind));
+
+            Direction direction;
+            if (!movementKeyBind.TryGetValue(key, out direction))
+                throw new ArgumentException("Key is not mapped to any direction");
+            return direction;
+        }
+
 
         /// <summary>
         /// Will store movement keys which have had a key down event, not key that has been continually pressed down
@@ -65,70 +89,42 @@ namespace Players
             foreach (KeyCode key in movementKeys)
             {
                 if (Input.GetKeyUp(key))
-                {
-                    if (inputs.Remove(key) && inputs.Count == 0 && lastActiveMovementKey != GetReverseInput(key))
-                        lastActiveMovementKey = key;
-                }
-                
+                    inputs.Remove(key);
             }
-            
-
-        // TODO This might be better for performance? but the above is more flexible. Delete if unnecessary
-            //if (Input.GetKeyUp(KeyCode.UpArrow))
-            //{
-            //    inputs.Remove(KeyCode.UpArrow);
-            //}
-            //if (Input.GetKeyUp(KeyCode.LeftArrow))
-            //{
-            //    inputs.Remove(KeyCode.LeftArrow);
-            //}
-            //if (Input.GetKeyUp(KeyCode.RightArrow))
-            //{
-            //    inputs.Remove(KeyCode.RightArrow);
-            //}
-            //if (Input.GetKeyUp(KeyCode.DownArrow))
-            //{
-            //    inputs.Remove(KeyCode.DownArrow);
-            //}
         }
 
         /// <summary>
-        /// Given the input key, will return the current velocity of the player
+        /// Given the direction, function will return the current velocity of the player
         /// </summary>
-        /// <param name="keyCode">Input key by the user</param>
-        /// <returns>A vector that respresents the velocity being traveled</returns>
-        private Vector2 GetVelocity(KeyCode keyCode)
+        /// <param name="dir">Current travel direction of the player</param>
+        /// <returns>A vector that respresents the current velocity of the player</returns>
+        private Vector2 GetVelocity(Direction dir)
         {
-            float xVel = keyCode == KeyCode.LeftArrow ? -speed
-                : keyCode == KeyCode.RightArrow ? speed
-                : 0;
-            float yVel = keyCode == KeyCode.UpArrow ? speed
-                : keyCode == KeyCode.DownArrow ? -speed
-                : 0;
+            float xVel, yVel;
+            switch (dir)
+            {
+                case Direction.NORTH:
+                    xVel = 0;
+                    yVel = speed;
+                    break;
+                case Direction.SOUTH:
+                    xVel = 0;
+                    yVel = -speed;
+                    break;
+                case Direction.EAST:
+                    xVel = speed;
+                    yVel = 0;
+                    break;
+                case Direction.WEST:
+                    xVel = -speed;
+                    yVel = 0;
+                    break;
+                default:
+                    throw new ArgumentException(String.Format(
+                        "The entered direction \"{0}\" does not have an implemented velocity", dir));
+            }
 
             return new Vector2(xVel, yVel);
-        }
-
-        /// <summary>
-        /// Get the movement key input that is the reverse direction of what is given
-        /// </summary>
-        /// <param name="key">Key to find the reverse input of</param>
-        /// <returns>Reverse key</returns>
-        private KeyCode GetReverseInput(KeyCode key)
-        {
-            KeyCode reverseKey;
-            if (key == KeyCode.UpArrow)
-                reverseKey = KeyCode.DownArrow;
-            else if (key == KeyCode.DownArrow)
-                reverseKey = KeyCode.UpArrow;
-            else if (key == KeyCode.LeftArrow)
-                reverseKey = KeyCode.RightArrow;
-            else if (key == KeyCode.RightArrow)
-                reverseKey = KeyCode.LeftArrow;
-            else
-                throw new System.ArgumentException("The entered movement input key does not have a mapped reverse key");
-
-            return reverseKey;
         }
     }
 
