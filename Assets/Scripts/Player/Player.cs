@@ -2,28 +2,29 @@ using System;
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
+using CustomCollection;
+using Util;
 
-
-
-namespace Players
+namespace Player
 {
     public class Player : MonoBehaviour
     {
-
         [SerializeField] private float speed;
+        [SerializeField] private Transform movePoint;
+
         private Rigidbody2D body;
         private ListSet<KeyCode> inputs;
         private Direction direction;
         private IDictionary<KeyCode, Direction> movementKeyBind;
         private KeyCode[] movementKeys;
 
-        private Logger logger = new Logger(Debug.unityLogger.logHandler);
-
         // Start is called before the first frame update
         void Awake()
         {
+
             body = GetComponent<Rigidbody2D>();
             inputs = new();
+            movePoint.parent = null;
 
             direction = Direction.NONE;
             movementKeyBind = Player1Constants.MovementKeyBind;
@@ -33,21 +34,19 @@ namespace Players
         // Update is called once per frame
         void Update()
         {
-            AddPressedMovementKeys(this.movementKeys);
-            RemoveReleasedMovementKeys(this.movementKeys);
-            //logger.Log(string.Format("Last active pressed key: {0}", lastActiveMovementKey));
+            AddPressedMovementKeys(this.movementKeys, this.inputs);
+            RemoveReleasedMovementKeys(this.movementKeys, this.inputs);
 
-            int lastIndex = inputs.Count - 1;
+            int lastIndex = this.inputs.Count - 1;
             if (lastIndex >= 0)
             {
-                Direction newDir = getDirection(inputs[lastIndex], this.movementKeyBind);
+                Direction newDir = getDirection(this.inputs[lastIndex], this.movementKeyBind);
                 if (newDir.GetOppositeDirection() != this.direction)
-                {
-                    body.velocity = GetVelocity(newDir);
                     this.direction = newDir;
-                }
-
             }
+
+            body.velocity = GetVelocity(this.direction, this.speed);
+            TestUtil.timedLog(String.Format("Current direction: {0}", this.direction));
         }
 
         /// <summary>
@@ -71,7 +70,9 @@ namespace Players
         /// <summary>
         /// Will store movement keys which have had a key down event, not key that has been continually pressed down
         /// </summary>
-        private void AddPressedMovementKeys(KeyCode[] movementKeys)
+        /// <param name="movementKeys">The movement keys which will be read</param>
+        /// <param name="inputs">The buffer of inputs made by the player</param>
+        private void AddPressedMovementKeys(KeyCode[] movementKeys, ListSet<KeyCode> inputs)
         {
             foreach (KeyCode key in movementKeys)
             {
@@ -84,7 +85,8 @@ namespace Players
         /// Any keys that are released, are immediately removed from inputs
         /// </summary>
         /// <param name="movementKeys">The movement keys which will be read</param>
-        private void RemoveReleasedMovementKeys(KeyCode[] movementKeys)
+        /// <param name="inputs">The buffer of inputs made by the player</param>
+        private void RemoveReleasedMovementKeys(KeyCode[] movementKeys, ListSet<KeyCode> inputs)
         {
             foreach (KeyCode key in movementKeys)
             {
@@ -94,11 +96,12 @@ namespace Players
         }
 
         /// <summary>
-        /// Given the direction, function will return the current velocity of the player
+        /// Given the direction and speed, function will return the current velocity of the player
         /// </summary>
         /// <param name="dir">Current travel direction of the player</param>
+        /// <param name="speed">Speed which the player will travel at in the specified direction</param>
         /// <returns>A vector that respresents the current velocity of the player</returns>
-        private Vector2 GetVelocity(Direction dir)
+        private Vector2 GetVelocity(Direction dir, float speed)
         {
             float xVel, yVel;
             switch (dir)
@@ -119,6 +122,10 @@ namespace Players
                     xVel = -speed;
                     yVel = 0;
                     break;
+                case Direction.NONE:
+                    xVel = 0;
+                    yVel = 0;
+                    break;
                 default:
                     throw new ArgumentException(String.Format(
                         "The entered direction \"{0}\" does not have an implemented velocity", dir));
@@ -126,6 +133,6 @@ namespace Players
 
             return new Vector2(xVel, yVel);
         }
-    }
 
+    }
 }

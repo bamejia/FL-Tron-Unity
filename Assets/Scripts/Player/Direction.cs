@@ -1,6 +1,4 @@
-using UnityEngine;
-
-namespace Players
+namespace Player
 {
     public enum Direction
     {

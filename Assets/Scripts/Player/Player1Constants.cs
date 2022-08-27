@@ -1,8 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Players
+namespace Player
 {
     public static class Player1Constants
     {

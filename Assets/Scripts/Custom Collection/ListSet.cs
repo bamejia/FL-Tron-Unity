@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using UnityEngine;
 
-
-namespace Players
+namespace CustomCollection
 {
     public class ListSet<T> : List<T>
     {
