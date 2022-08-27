@@ -6,7 +6,7 @@ namespace Util
     {
         private static readonly Logger logger = new(Debug.unityLogger.logHandler);
 
-        private static float timeI = 0;
+        private static float timeI = float.MinValue;
         public static void log(string text)
         {
             logger.Log(text);
