@@ -18,7 +18,7 @@ namespace Util
         /// </summary>
         /// <param name="text">Text to log</param>
         /// <param name="interval">Interval in seconds to allow a log to be created</param>
-        public static void timedLog(string text, float interval = 1)
+        public static void timedLog(string text, float interval = 1f)
         {
             if (Time.time - timeI >= interval)
             {

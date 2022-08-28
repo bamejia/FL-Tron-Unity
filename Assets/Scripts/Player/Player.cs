@@ -14,10 +14,12 @@ namespace Player
         [SerializeField] private Transform bufferPoint;
 
         private Rigidbody2D body;
-        private Vector3 size;
+        private new SpriteRenderer renderer;
+        private new BoxCollider2D collider;
+        private TrailRenderer trail;
 
-        private ListSet<KeyCode> movementInputs; // Stored movement key inputs in the order they were pressed
-        private Direction bufferDir; // Direction the buffer is looking
+        private ListSet<KeyCode> movementQueue; // Stored movement key inputs in the order they were pressed
+        private Direction bufferDir; // Direction the buffer point is looking
         private Direction direction; // Current direction of the player
         private IDictionary<KeyCode, Direction> movementKeyBind;
         private KeyCode[] movementKeys;
@@ -26,8 +28,12 @@ namespace Player
         void Awake()
         {
             body = GetComponent<Rigidbody2D>();
-            size = GetComponent<BoxCollider2D>().bounds.size;
-            movementInputs = new();
+            renderer = GetComponent<SpriteRenderer>();
+            collider = GetComponent<BoxCollider2D>();
+            trail = GetComponent<TrailRenderer>();
+            trail.startColor = trail.endColor = renderer.color;
+
+            movementQueue = new();
             movePoint.parent = null;
             bufferPoint.parent = null;
 
@@ -37,27 +43,38 @@ namespace Player
             movementKeys = movementKeyBind.Keys.ToArray();
         }
 
+
+
         // Update is called once per frame
         void Update()
         {
-            AddPressedMovementKeys(this.movementKeys, this.movementInputs);
-            RemoveReleasedMovementKeys(this.movementKeys, this.movementInputs);
+            // Stores pressed down movement keys into a queued set
+            AddPressedMovementKeys(this.movementKeys, this.movementQueue);
+            // Removes movement keys from queued set after they are released
+            RemoveReleasedMovementKeys(this.movementKeys, this.movementQueue);
 
-            int lastIndex = this.movementInputs.Count - 1;
+            // Acquire the last pressed down key within a set of pressed down keys
+            int lastIndex = this.movementQueue.Count - 1;
             if (lastIndex >= 0)
             {
-                Direction newDir = getDirection(this.movementInputs[lastIndex], this.movementKeyBind);
+                Direction newDir = getDirection(this.movementQueue[lastIndex], this.movementKeyBind);
                 if (newDir.GetOppositeDirection() != this.direction)
                     this.bufferDir = newDir;
             } 
 
+            // Moves the player body towards the movePoint
             body.transform.position = Vector2.MoveTowards(body.transform.position, movePoint.position, speed * Time.deltaTime);
+            // After the player reaches the movePoint, it gets moved to the location of the bufferPoint
             if (Vector2.Distance(body.transform.position, movePoint.position) <= 0f)
             {
                 movePoint.position = bufferPoint.position;
                 this.direction = this.bufferDir;
             }
-            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.size);
+            // The bufferPoint gets moved to a player width distance from the movePoint in the player selected direction
+            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.collider.bounds.size);
+
+            // Resize the player's trail in case of size change or difference between player height and width
+            SetTrailWidth(this.trail, this.direction, collider.bounds.size);
 
             TestUtil.timedLog(String.Format("Current direction: {0}", this.bufferDir));
         }
@@ -113,38 +130,71 @@ namespace Player
         /// </summary>
         /// <param name="dir">Current travel direction the player wishes to travel</param>
         /// <param name="size">The hitbox size of the player which will be used to move the player in a gridlike pattern</param>
-        /// <returns>A vector that respresents the current velocity of the player</returns>
+        /// <returns>A vector that respresents the current delta position of the buffer point</returns>
         private Vector3 GetPosDelta(Direction dir, Vector2 size)
         {
-            float xVel, yVel;
+            float xDelta, yDelta;
             switch (dir)
             {
                 case Direction.NORTH:
-                    xVel = 0;
-                    yVel = size.y;
+                    xDelta = 0;
+                    yDelta = size.y;
                     break;
                 case Direction.SOUTH:
-                    xVel = 0;
-                    yVel = -size.y;
+                    xDelta = 0;
+                    yDelta = -size.y;
                     break;
                 case Direction.EAST:
-                    xVel = size.x;
-                    yVel = 0;
+                    xDelta = size.x;
+                    yDelta = 0;
                     break;
                 case Direction.WEST:
-                    xVel = -size.x;
-                    yVel = 0;
+                    xDelta = -size.x;
+                    yDelta = 0;
                     break;
                 case Direction.NONE:
-                    xVel = 0;
-                    yVel = 0;
+                    xDelta = 0;
+                    yDelta = 0;
                     break;
                 default:
                     throw new ArgumentException(String.Format(
                         "The entered direction \"{0}\" does not have an implemented velocity", dir));
             }
 
-            return new Vector2(xVel, yVel);
+            return new Vector2(xDelta, yDelta);
+        }
+
+        /// <summary>
+        /// Sets the start and end width of the Player's trail, in case the Player's height and width are different or change
+        /// </summary>
+        /// <param name="trail">The Player's trail renderer</param>
+        /// <param name="dir">Current Player travel direction</param>
+        /// <param name="size">The Player's size</param>
+        /// <returns>The width that the trail was set to</returns>
+        private float SetTrailWidth(TrailRenderer trail, Direction dir, Vector2 size)
+        {
+            float width;
+            switch (dir)
+            {
+                case Direction.NORTH:
+                case Direction.SOUTH:
+                    width = size.x;
+                    break;
+                case Direction.EAST:
+                case Direction.WEST:
+                    width = size.y;
+                    break;
+                case Direction.NONE:
+                    width = 0;
+                    break;
+                default:
+                    throw new ArgumentException(String.Format(
+                        "The entered direction \"{0}\" does not have an implemented trail width", dir));
+            }
+
+            trail.startWidth = trail.endWidth = width;
+            
+            return width;
         }
 
     }
