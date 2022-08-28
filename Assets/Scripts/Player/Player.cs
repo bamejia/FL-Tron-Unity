@@ -14,7 +14,9 @@ namespace Player
         [SerializeField] private Transform bufferPoint;
 
         private Rigidbody2D body;
-        private Vector3 size;
+        private new SpriteRenderer renderer;
+        private new BoxCollider2D collider;
+        private TrailRenderer trail;
 
         private ListSet<KeyCode> movementQueue; // Stored movement key inputs in the order they were pressed
         private Direction bufferDir; // Direction the buffer point is looking
@@ -26,7 +28,11 @@ namespace Player
         void Awake()
         {
             body = GetComponent<Rigidbody2D>();
-            size = GetComponent<BoxCollider2D>().bounds.size;
+            renderer = GetComponent<SpriteRenderer>();
+            collider = GetComponent<BoxCollider2D>();
+            trail = GetComponent<TrailRenderer>();
+            trail.startColor = trail.endColor = renderer.color;
+
             movementQueue = new();
             movePoint.parent = null;
             bufferPoint.parent = null;
@@ -36,6 +42,8 @@ namespace Player
             movementKeyBind = Player1Constants.MovementKeyBind;
             movementKeys = movementKeyBind.Keys.ToArray();
         }
+
+
 
         // Update is called once per frame
         void Update()
@@ -63,7 +71,10 @@ namespace Player
                 this.direction = this.bufferDir;
             }
             // The bufferPoint gets moved to a player width distance from the movePoint in the player selected direction
-            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.size);
+            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.collider.bounds.size);
+
+            // Resize the player's trail in case of size change or difference between player height and width
+            SetTrailWidth(this.trail, this.direction, collider.bounds.size);
 
             TestUtil.timedLog(String.Format("Current direction: {0}", this.bufferDir));
         }
@@ -151,6 +162,39 @@ namespace Player
             }
 
             return new Vector2(xDelta, yDelta);
+        }
+
+        /// <summary>
+        /// Sets the start and end width of the Player's trail, in case the Player's height and width are different or change
+        /// </summary>
+        /// <param name="trail">The Player's trail renderer</param>
+        /// <param name="dir">Current Player travel direction</param>
+        /// <param name="size">The Player's size</param>
+        /// <returns>The width that the trail was set to</returns>
+        private float SetTrailWidth(TrailRenderer trail, Direction dir, Vector2 size)
+        {
+            float width;
+            switch (dir)
+            {
+                case Direction.NORTH:
+                case Direction.SOUTH:
+                    width = size.x;
+                    break;
+                case Direction.EAST:
+                case Direction.WEST:
+                    width = size.y;
+                    break;
+                case Direction.NONE:
+                    width = 0;
+                    break;
+                default:
+                    throw new ArgumentException(String.Format(
+                        "The entered direction \"{0}\" does not have an implemented trail width", dir));
+            }
+
+            trail.startWidth = trail.endWidth = width;
+            
+            return width;
         }
 
     }
