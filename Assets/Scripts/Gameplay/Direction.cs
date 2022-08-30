@@ -1,4 +1,4 @@
-namespace Player
+namespace Navigation
 {
     public enum Direction
     {

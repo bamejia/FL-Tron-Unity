@@ -2,10 +2,11 @@ using System;
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
+using Navigation;
 using CustomCollection;
 using Util;
 
-namespace Player
+namespace Gameplay
 {
     public class Player : MonoBehaviour
     {
@@ -13,16 +14,18 @@ namespace Player
         [SerializeField] private Transform movePoint;
         [SerializeField] private Transform bufferPoint;
 
-        private Rigidbody2D body;
+        internal Rigidbody2D body;
         private new SpriteRenderer renderer;
         private new BoxCollider2D collider;
-        private TrailRenderer trail;
-
-        private ListSet<KeyCode> movementQueue; // Stored movement key inputs in the order they were pressed
-        private Direction bufferDir; // Direction the buffer point is looking
-        private Direction direction; // Current direction of the player
+  
+        private readonly ListSet<KeyCode> movementQueue = new(); // Stored movement key inputs in the order they were pressed
+        internal Direction bufferDir; // Direction the buffer point is looking
+        internal Direction direction; // Current direction of the player
         private IDictionary<KeyCode, Direction> movementKeyBind;
         private KeyCode[] movementKeys;
+
+        internal bool updateTrail = false;
+        internal bool directionsMatch = false;
 
         // Start is called before the first frame update
         void Awake()
@@ -30,10 +33,7 @@ namespace Player
             body = GetComponent<Rigidbody2D>();
             renderer = GetComponent<SpriteRenderer>();
             collider = GetComponent<BoxCollider2D>();
-            trail = GetComponent<TrailRenderer>();
-            trail.startColor = trail.endColor = renderer.color;
 
-            movementQueue = new();
             movePoint.parent = null;
             bufferPoint.parent = null;
 
@@ -43,15 +43,13 @@ namespace Player
             movementKeys = movementKeyBind.Keys.ToArray();
         }
 
-
-
         // Update is called once per frame
         void Update()
         {
             // Stores pressed down movement keys into a queued set
-            AddPressedMovementKeys(this.movementKeys, this.movementQueue);
+            this.AddPressedMovementKeys(this.movementKeys, this.movementQueue);
             // Removes movement keys from queued set after they are released
-            RemoveReleasedMovementKeys(this.movementKeys, this.movementQueue);
+            this.RemoveReleasedMovementKeys(this.movementKeys, this.movementQueue);
 
             // Acquire the last pressed down key within a set of pressed down keys
             int lastIndex = this.movementQueue.Count - 1;
@@ -67,16 +65,18 @@ namespace Player
             // After the player reaches the movePoint, it gets moved to the location of the bufferPoint
             if (Vector2.Distance(body.transform.position, movePoint.position) <= 0f)
             {
+                // Flag to let the player trail generator know to create or update the trail
+                this.updateTrail = true;
+                this.directionsMatch = this.direction == this.bufferDir;
+
+                // MovePoint is moved to the bufferPoint, and now has the same direction
                 movePoint.position = bufferPoint.position;
                 this.direction = this.bufferDir;
             }
             // The bufferPoint gets moved to a player width distance from the movePoint in the player selected direction
             bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.collider.bounds.size);
 
-            // Resize the player's trail in case of size change or difference between player height and width
-            SetTrailWidth(this.trail, this.direction, collider.bounds.size);
-
-            TestUtil.timedLog(String.Format("Current direction: {0}", this.bufferDir));
+            //TestUtil.TimedLog(String.Format("Current direction: {0}", this.bufferDir));
         }
 
         /// <summary>
@@ -162,39 +162,6 @@ namespace Player
             }
 
             return new Vector2(xDelta, yDelta);
-        }
-
-        /// <summary>
-        /// Sets the start and end width of the Player's trail, in case the Player's height and width are different or change
-        /// </summary>
-        /// <param name="trail">The Player's trail renderer</param>
-        /// <param name="dir">Current Player travel direction</param>
-        /// <param name="size">The Player's size</param>
-        /// <returns>The width that the trail was set to</returns>
-        private float SetTrailWidth(TrailRenderer trail, Direction dir, Vector2 size)
-        {
-            float width;
-            switch (dir)
-            {
-                case Direction.NORTH:
-                case Direction.SOUTH:
-                    width = size.x;
-                    break;
-                case Direction.EAST:
-                case Direction.WEST:
-                    width = size.y;
-                    break;
-                case Direction.NONE:
-                    width = 0;
-                    break;
-                default:
-                    throw new ArgumentException(String.Format(
-                        "The entered direction \"{0}\" does not have an implemented trail width", dir));
-            }
-
-            trail.startWidth = trail.endWidth = width;
-            
-            return width;
         }
 
     }
