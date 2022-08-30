@@ -14,6 +14,8 @@ namespace Gameplay
         private readonly List<GameObject> trail = new(); // Holds all the create trail objects created when a user passes a tile
         private SpriteRenderer baseRenderer;
 
+        private static int logCount = 0;
+
         // Start is called before the first frame update
         void Awake()
         {
@@ -28,8 +30,6 @@ namespace Gameplay
             trail.Add(newTrail);
         }
 
-        private static int count = 0; 
-
         // Update is called once per frame
         void Update()
         {
@@ -39,7 +39,6 @@ namespace Gameplay
                 if (player.transform.position != trail[trail.Count - 1].transform.position)
                 {
                     this.HandleTrail(this.trail, this.baseTrail, this.player, this.baseRenderer.bounds.size);
-                    count++;
                 }
                 player.updateTrail = false;
             }
@@ -50,16 +49,16 @@ namespace Gameplay
         {
             if (player.directionsMatch)
             {
-                TestUtil.Log("Updating Trail: " + count);
+                TestUtil.Log("Updating Trail: " + logCount);
                 GameObject lastTrail = trail[trail.Count - 1];
                 this.UpdateLastTrail(lastTrail, player.bufferDir, size);
             }
             else
             {
-                TestUtil.Log("Creating Trail: " + count);
+                TestUtil.Log("Creating Trail: " + logCount);
                 this.CreateTrail(trail, baseTrail, player.transform.position);
             }
-            //this.CreateTrail(trail, baseTrail, position);
+            logCount++;
         }
 
         private void CreateTrail(List<GameObject> trail, GameObject baseTrail, Vector3 position)

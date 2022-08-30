@@ -27,7 +27,6 @@ namespace Gameplay
         internal bool updateTrail = false;
         internal bool directionsMatch = false;
 
-
         // Start is called before the first frame update
         void Awake()
         {
@@ -43,8 +42,6 @@ namespace Gameplay
             movementKeyBind = Player1Constants.MovementKeyBind;
             movementKeys = movementKeyBind.Keys.ToArray();
         }
-
-
 
         // Update is called once per frame
         void Update()
