@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Navigation;
 
-namespace Player
+namespace Gameplay
 {
     public static class Player1Constants
     {
