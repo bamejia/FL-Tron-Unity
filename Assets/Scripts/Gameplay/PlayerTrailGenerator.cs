@@ -11,34 +11,45 @@ namespace Gameplay
         [SerializeField] private GameObject baseTrail;
         [SerializeField] private Player player;
 
-        private readonly List<GameObject> trail = new(); // Holds all the create trail objects created when a user passes a tile
         private SpriteRenderer baseRenderer;
+        private Collider2D playerCollider;
+        private SpriteRenderer playerRenderer;
 
         private static int logCount = 0;
 
         // Start is called before the first frame update
         void Awake()
         {
+            playerCollider = player.GetComponent<Collider2D>();
+            playerRenderer = player.GetComponent<SpriteRenderer>();
             baseRenderer = baseTrail.GetComponent<SpriteRenderer>();
+            baseRenderer.color = playerRenderer.color;
 
             // Create the player trail as a separate GameObject
             baseTrail.transform.parent = null;
+            Collider2D baseCollider = baseTrail.GetComponent<Collider2D>();
+            baseCollider.enabled = false;
+            Physics2D.IgnoreCollision(baseCollider, playerCollider);
+
             baseRenderer.enabled = false;
             GameObject newTrail = Instantiate<GameObject>(baseTrail);
+            Collider2D newTrailCollider = newTrail.GetComponent<Collider2D>();
+            newTrailCollider.enabled = true;
+            Physics2D.IgnoreCollision(newTrailCollider, playerCollider, true);
             newTrail.GetComponent<SpriteRenderer>().enabled = true;
             //baseTrail.tag = string.Format("{0} Trail", this.name is string playerTag && playerTag != null ? playerTag : "Indefinted");
-            trail.Add(newTrail);
+            player.trail.Add(newTrail);
         }
 
         // Update is called once per frame
         void Update()
         {
             // Upon reaching the movePoint, the player's trail will extend to the player's current location
-            if (player.updateTrail)
+            if (this.player.updateTrail)
             {
-                if (player.transform.position != trail[trail.Count - 1].transform.position)
+                if (this.player.transform.position != this.player.trail[this.player.trail.Count - 1].transform.position)
                 {
-                    this.HandleTrail(this.trail, this.baseTrail, this.player, this.baseRenderer.bounds.size);
+                    this.HandleTrail(this.player.trail, this.baseTrail, this.player, this.baseRenderer.bounds.size);
                 }
                 player.updateTrail = false;
             }
@@ -68,6 +79,12 @@ namespace Gameplay
                 GameObject newTrail = Instantiate<GameObject>(baseTrail);
                 newTrail.transform.position = position;
                 newTrail.GetComponent<SpriteRenderer>().enabled = true;
+                Collider2D newCollider = newTrail.GetComponent<Collider2D>();
+                newCollider.enabled = true;
+                Physics2D.IgnoreCollision(lastTrail.GetComponent<Collider2D>(), playerCollider, false);
+                Physics2D.IgnoreCollision(newCollider, playerCollider);
+
+                //trail.ForEach(t => Physics2D.IgnoreCollision(t.GetComponent<Collider2D>(), newCollider));
                 trail.Add(newTrail);
             }
         }
@@ -124,6 +141,5 @@ namespace Gameplay
             lastTrail.transform.localScale += new Vector3(deltaScaleX, deltaScaleY, 0);
             lastTrail.transform.position += new Vector3(deltaPosX, deltaPosY, 0f);
         }
-
     }
 }
