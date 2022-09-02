@@ -172,16 +172,17 @@ namespace Gameplay
 
         public void OnCollisionEnter2D(Collision2D collision)
         {
-            Color deathColor = new Color(
-                renderer.color.r - onDeathColorDimPercentage, 
-                renderer.color.g - onDeathColorDimPercentage, 
-                renderer.color.b - onDeathColorDimPercentage, 
-                renderer.color.a
-                );
-            this.renderer.color = deathColor;
-            this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
+            //TODO Fix this to kill the player when they collide with anything
+            //Color deathColor = new Color(
+            //    renderer.color.r - onDeathColorDimPercentage, 
+            //    renderer.color.g - onDeathColorDimPercentage, 
+            //    renderer.color.b - onDeathColorDimPercentage, 
+            //    renderer.color.a
+            //    );
+            //this.renderer.color = deathColor;
+            //this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
 
-            this.isAlive = false;
+            //this.isAlive = false;
         }
     }
 }
