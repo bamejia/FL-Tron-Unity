@@ -15,24 +15,28 @@ namespace Gameplay
         [SerializeField] private Transform bufferPoint;
 
         internal Rigidbody2D body;
-        private new SpriteRenderer renderer;
         private new BoxCollider2D collider;
+        private new SpriteRenderer renderer;
   
         private readonly ListSet<KeyCode> movementQueue = new(); // Stored movement key inputs in the order they were pressed
         internal Direction bufferDir; // Direction the buffer point is looking
         internal Direction direction; // Current direction of the player
         private IDictionary<KeyCode, Direction> movementKeyBind;
         private KeyCode[] movementKeys;
+        internal readonly List<GameObject> trail = new(); // Holds all the create trail objects created when a user passes a tile
 
         internal bool updateTrail = false;
         internal bool directionsMatch = false;
+
+        private bool isAlive = true;
+        private int onDeathColorDimPercentage = 20; // On death, the percentage that the color will be dimmed
 
         // Start is called before the first frame update
         void Awake()
         {
             body = GetComponent<Rigidbody2D>();
-            renderer = GetComponent<SpriteRenderer>();
             collider = GetComponent<BoxCollider2D>();
+            renderer = GetComponent<SpriteRenderer>();
 
             movePoint.parent = null;
             bufferPoint.parent = null;
@@ -61,7 +65,9 @@ namespace Gameplay
             } 
 
             // Moves the player body towards the movePoint
-            body.transform.position = Vector2.MoveTowards(body.transform.position, movePoint.position, speed * Time.deltaTime);
+            if (this.isAlive)
+                body.transform.position = Vector2.MoveTowards(
+                    body.transform.position, movePoint.position, speed * Time.deltaTime);
             // After the player reaches the movePoint, it gets moved to the location of the bufferPoint
             if (Vector2.Distance(body.transform.position, movePoint.position) <= 0f)
             {
@@ -164,5 +170,19 @@ namespace Gameplay
             return new Vector2(xDelta, yDelta);
         }
 
+        public void OnCollisionEnter2D(Collision2D collision)
+        {
+            //TODO Fix this to kill the player when they collide with anything
+            //Color deathColor = new Color(
+            //    renderer.color.r - onDeathColorDimPercentage, 
+            //    renderer.color.g - onDeathColorDimPercentage, 
+            //    renderer.color.b - onDeathColorDimPercentage, 
+            //    renderer.color.a
+            //    );
+            //this.renderer.color = deathColor;
+            //this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
+
+            //this.isAlive = false;
+        }
     }
 }
