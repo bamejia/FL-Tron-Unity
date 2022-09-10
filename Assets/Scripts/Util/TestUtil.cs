@@ -4,17 +4,18 @@ namespace Util
 {
     public static class TestUtil
     {
-        private static readonly Logger logger = new(Debug.unityLogger.logHandler);
+        //TODO To modify logger in future perhaps otherwise can delete
+        //private static readonly Logger logger = new(Debug.unityLogger.logHandler);
 
         private static float timeI = float.MinValue;
 
         public static void Log(string text)
         {
-            logger.Log(text);
+            Debug.Log(text);
         }
-        public static void Log(string format, params Object[] formatArgs)
+        public static void Log(string format, params System.Object[] formatArgs)
         {
-            logger.Log(string.Format(format, formatArgs));
+            Debug.Log(string.Format(format, formatArgs));
         }
 
         /// <summary>

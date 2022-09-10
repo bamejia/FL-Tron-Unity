@@ -29,11 +29,22 @@ namespace Gameplay
         internal bool directionsMatch = false;
 
         private bool isAlive = true;
-        private int onDeathColorDimPercentage = 20; // On death, the percentage that the color will be dimmed
+        private float _onDeathColorReduction = 0; // On death, the ratio to multiple that the color will be dimmed
+        private byte OnDeathColorDimPrecentage
+        {
+            get => Convert.ToByte(_onDeathColorReduction * 100f);
+            set
+            {
+                if (value > 100) value = 100;
+                _onDeathColorReduction = (float)((100f - Convert.ToSingle(value)) / 100f);
+            }
+        }
 
         // Start is called before the first frame update
         void Awake()
         {
+            OnDeathColorDimPrecentage = 40;
+
             body = GetComponent<Rigidbody2D>();
             collider = GetComponent<BoxCollider2D>();
             renderer = GetComponent<SpriteRenderer>();
@@ -80,7 +91,7 @@ namespace Gameplay
                 this.direction = this.bufferDir;
             }
             // The bufferPoint gets moved to a player width distance from the movePoint in the player selected direction
-            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.collider.bounds.size);
+            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.renderer.bounds.size);
 
             //TestUtil.TimedLog(String.Format("Current direction: {0}", this.bufferDir));
         }
@@ -172,17 +183,17 @@ namespace Gameplay
 
         public void OnCollisionEnter2D(Collision2D collision)
         {
-            //TODO Fix this to kill the player when they collide with anything
-            //Color deathColor = new Color(
-            //    renderer.color.r - onDeathColorDimPercentage, 
-            //    renderer.color.g - onDeathColorDimPercentage, 
-            //    renderer.color.b - onDeathColorDimPercentage, 
-            //    renderer.color.a
-            //    );
-            //this.renderer.color = deathColor;
-            //this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
+            Color deathColor = new Color(
+            renderer.color.r * _onDeathColorReduction, 
+                renderer.color.g * _onDeathColorReduction, 
+                renderer.color.b * _onDeathColorReduction, 
+                renderer.color.a
+                );
+            this.renderer.color = deathColor;
+            this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
 
-            //this.isAlive = false;
+            this.isAlive = false;
+            TestUtil.Log("deathColor: {0}", deathColor);
         }
     }
 }

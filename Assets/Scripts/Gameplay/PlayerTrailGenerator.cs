@@ -37,6 +37,8 @@ namespace Gameplay
             newTrailCollider.enabled = true;
             Physics2D.IgnoreCollision(newTrailCollider, playerCollider, true);
             newTrail.GetComponent<SpriteRenderer>().enabled = true;
+
+            //TODO Perhaps add tag to trail objects
             //baseTrail.tag = string.Format("{0} Trail", this.name is string playerTag && playerTag != null ? playerTag : "Indefinted");
             player.trail.Add(newTrail);
         }
@@ -74,7 +76,7 @@ namespace Gameplay
 
         private void CreateTrail(List<GameObject> trail, GameObject baseTrail, Vector3 position)
         {
-            if (trail[trail.Count - 1] is GameObject lastTrail && lastTrail.transform.position != position)
+            if (trail[^1] is GameObject lastTrail && lastTrail.transform.position != position)
             {
                 GameObject newTrail = Instantiate<GameObject>(baseTrail);
                 newTrail.transform.position = position;
@@ -84,7 +86,6 @@ namespace Gameplay
                 Physics2D.IgnoreCollision(lastTrail.GetComponent<Collider2D>(), playerCollider, false);
                 Physics2D.IgnoreCollision(newCollider, playerCollider);
 
-                //trail.ForEach(t => Physics2D.IgnoreCollision(t.GetComponent<Collider2D>(), newCollider));
                 trail.Add(newTrail);
             }
         }
