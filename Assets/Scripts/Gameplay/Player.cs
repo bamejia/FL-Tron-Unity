@@ -10,10 +10,13 @@ namespace Gameplay
 {
     public class Player : MonoBehaviour
     {
-        [SerializeField] private float speed;
         [SerializeField] private Transform movePoint;
         [SerializeField] private Transform bufferPoint;
+        [SerializeField] private PlayType playType;
+        [SerializeField] private DesignatedPlayer designation;
+        [SerializeField] private GameObject baseTrail;
 
+        private float speed;
         internal Rigidbody2D body;
         private new BoxCollider2D collider;
         private new SpriteRenderer renderer;
@@ -23,17 +26,31 @@ namespace Gameplay
         internal Direction direction; // Current direction of the player
         private IDictionary<KeyCode, Direction> movementKeyBind;
         private KeyCode[] movementKeys;
-        internal readonly List<GameObject> trail = new(); // Holds all the create trail objects created when a user passes a tile
+        private PlayerTrailGenerator trailGenerator;
 
+        internal readonly List<GameObject> trail = new(); // Holds all the create trail objects created when a user passes a tile
         internal bool updateTrail = false;
         internal bool directionsMatch = false;
+        internal Vector3 newTrailPos = new();
 
         private bool isAlive = true;
-        private int onDeathColorDimPercentage = 20; // On death, the percentage that the color will be dimmed
+        private float _onDeathColorReduction = 0; // On death, the ratio to multiple that the color will be dimmed
+        private byte OnDeathColorDimPrecentage
+        {
+            get => Convert.ToByte(_onDeathColorReduction * 100f);
+            set
+            {
+                if (value > 100) value = 100;
+                _onDeathColorReduction = (float)((100f - Convert.ToSingle(value)) / 100f);
+            }
+        }
 
         // Start is called before the first frame update
         void Awake()
         {
+            OnDeathColorDimPrecentage = 40;
+            trailGenerator = new(this, baseTrail);
+
             body = GetComponent<Rigidbody2D>();
             collider = GetComponent<BoxCollider2D>();
             renderer = GetComponent<SpriteRenderer>();
@@ -43,8 +60,9 @@ namespace Gameplay
 
             bufferDir = Direction.NONE;
             direction = bufferDir;
-            movementKeyBind = Player1Constants.MovementKeyBind;
+            movementKeyBind = PlayerConstants.getPlayerMovementKeyBind(playType, designation);
             movementKeys = movementKeyBind.Keys.ToArray();
+            speed = PlayerConstants.DEFAULT_SPEED;
         }
 
         // Update is called once per frame
@@ -74,13 +92,15 @@ namespace Gameplay
                 // Flag to let the player trail generator know to create or update the trail
                 this.updateTrail = true;
                 this.directionsMatch = this.direction == this.bufferDir;
+                this.newTrailPos = this.movePoint.transform.position;
 
                 // MovePoint is moved to the bufferPoint, and now has the same direction
                 movePoint.position = bufferPoint.position;
                 this.direction = this.bufferDir;
+                this.trailGenerator.Generate();
             }
             // The bufferPoint gets moved to a player width distance from the movePoint in the player selected direction
-            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.collider.bounds.size);
+            bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.renderer.bounds.size);
 
             //TestUtil.TimedLog(String.Format("Current direction: {0}", this.bufferDir));
         }
@@ -172,17 +192,17 @@ namespace Gameplay
 
         public void OnCollisionEnter2D(Collision2D collision)
         {
-            //TODO Fix this to kill the player when they collide with anything
-            //Color deathColor = new Color(
-            //    renderer.color.r - onDeathColorDimPercentage, 
-            //    renderer.color.g - onDeathColorDimPercentage, 
-            //    renderer.color.b - onDeathColorDimPercentage, 
-            //    renderer.color.a
-            //    );
-            //this.renderer.color = deathColor;
-            //this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
+            Color deathColor = new Color(
+            renderer.color.r * _onDeathColorReduction, 
+                renderer.color.g * _onDeathColorReduction, 
+                renderer.color.b * _onDeathColorReduction, 
+                renderer.color.a
+                );
+            this.renderer.color = deathColor;
+            this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
 
-            //this.isAlive = false;
+            this.isAlive = false;
+            //TestUtil.Log("deathColor: {0}", deathColor);
         }
     }
 }
