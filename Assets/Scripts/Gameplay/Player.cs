@@ -10,10 +10,13 @@ namespace Gameplay
 {
     public class Player : MonoBehaviour
     {
-        [SerializeField] private float speed;
         [SerializeField] private Transform movePoint;
         [SerializeField] private Transform bufferPoint;
+        [SerializeField] private PlayType playType;
+        [SerializeField] private DesignatedPlayer designation;
+        [SerializeField] private GameObject baseTrail;
 
+        private float speed;
         internal Rigidbody2D body;
         private new BoxCollider2D collider;
         private new SpriteRenderer renderer;
@@ -23,10 +26,12 @@ namespace Gameplay
         internal Direction direction; // Current direction of the player
         private IDictionary<KeyCode, Direction> movementKeyBind;
         private KeyCode[] movementKeys;
-        internal readonly List<GameObject> trail = new(); // Holds all the create trail objects created when a user passes a tile
+        private PlayerTrailGenerator trailGenerator;
 
+        internal readonly List<GameObject> trail = new(); // Holds all the create trail objects created when a user passes a tile
         internal bool updateTrail = false;
         internal bool directionsMatch = false;
+        internal Vector3 newTrailPos = new();
 
         private bool isAlive = true;
         private float _onDeathColorReduction = 0; // On death, the ratio to multiple that the color will be dimmed
@@ -44,6 +49,7 @@ namespace Gameplay
         void Awake()
         {
             OnDeathColorDimPrecentage = 40;
+            trailGenerator = new(this, baseTrail);
 
             body = GetComponent<Rigidbody2D>();
             collider = GetComponent<BoxCollider2D>();
@@ -54,8 +60,9 @@ namespace Gameplay
 
             bufferDir = Direction.NONE;
             direction = bufferDir;
-            movementKeyBind = Player1Constants.MovementKeyBind;
+            movementKeyBind = PlayerConstants.getPlayerMovementKeyBind(playType, designation);
             movementKeys = movementKeyBind.Keys.ToArray();
+            speed = PlayerConstants.DEFAULT_SPEED;
         }
 
         // Update is called once per frame
@@ -85,10 +92,12 @@ namespace Gameplay
                 // Flag to let the player trail generator know to create or update the trail
                 this.updateTrail = true;
                 this.directionsMatch = this.direction == this.bufferDir;
+                this.newTrailPos = this.movePoint.transform.position;
 
                 // MovePoint is moved to the bufferPoint, and now has the same direction
                 movePoint.position = bufferPoint.position;
                 this.direction = this.bufferDir;
+                this.trailGenerator.Generate();
             }
             // The bufferPoint gets moved to a player width distance from the movePoint in the player selected direction
             bufferPoint.position = movePoint.position + GetPosDelta(this.bufferDir, this.renderer.bounds.size);
@@ -193,7 +202,7 @@ namespace Gameplay
             this.trail.ForEach(t => t.GetComponent<SpriteRenderer>().color = deathColor);
 
             this.isAlive = false;
-            TestUtil.Log("deathColor: {0}", deathColor);
+            //TestUtil.Log("deathColor: {0}", deathColor);
         }
     }
 }

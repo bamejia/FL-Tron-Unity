@@ -6,33 +6,34 @@ using Util;
 
 namespace Gameplay
 {
-    public class PlayerTrailGenerator : MonoBehaviour
+    public class PlayerTrailGenerator
     {
-        [SerializeField] private GameObject baseTrail;
-        [SerializeField] private Player player;
-
+        private GameObject baseTrail;
         private SpriteRenderer baseRenderer;
         private Collider2D playerCollider;
         private SpriteRenderer playerRenderer;
+        private Player player;
 
         private static int logCount = 0;
 
-        // Start is called before the first frame update
-        void Awake()
+        public PlayerTrailGenerator(Player player, GameObject baseTrail)
         {
-            playerCollider = player.GetComponent<Collider2D>();
-            playerRenderer = player.GetComponent<SpriteRenderer>();
-            baseRenderer = baseTrail.GetComponent<SpriteRenderer>();
-            baseRenderer.color = playerRenderer.color;
+            this.player = player;
+            this.baseTrail = baseTrail;
+
+            this.playerCollider = player.GetComponent<Collider2D>();
+            this.playerRenderer = player.GetComponent<SpriteRenderer>();
+            this.baseRenderer = baseTrail.GetComponent<SpriteRenderer>();
+            this.baseRenderer.color = playerRenderer.color;
 
             // Create the player trail as a separate GameObject
-            baseTrail.transform.parent = null;
+            this.baseTrail.transform.parent = null;
             Collider2D baseCollider = baseTrail.GetComponent<Collider2D>();
             baseCollider.enabled = false;
             Physics2D.IgnoreCollision(baseCollider, playerCollider);
 
-            baseRenderer.enabled = false;
-            GameObject newTrail = Instantiate<GameObject>(baseTrail);
+            this.baseRenderer.enabled = false;
+            GameObject newTrail = MonoBehaviour.Instantiate<GameObject>(baseTrail);
             Collider2D newTrailCollider = newTrail.GetComponent<Collider2D>();
             newTrailCollider.enabled = true;
             Physics2D.IgnoreCollision(newTrailCollider, playerCollider, true);
@@ -40,21 +41,21 @@ namespace Gameplay
 
             //TODO Perhaps add tag to trail objects
             //baseTrail.tag = string.Format("{0} Trail", this.name is string playerTag && playerTag != null ? playerTag : "Indefinted");
-            player.trail.Add(newTrail);
+            this.player.trail.Add(newTrail);
         }
 
         // Update is called once per frame
-        void Update()
+        public void Generate()
         {
-            // Upon reaching the movePoint, the player's trail will extend to the player's current location
-            if (this.player.updateTrail)
-            {
-                if (this.player.transform.position != this.player.trail[this.player.trail.Count - 1].transform.position)
+            //// Upon reaching the movePoint, the player's trail will extend to the player's current location
+            //if (this.player.updateTrail)
+            //{
+                if (this.player.transform.position != this.player.trail[^1].transform.position)
                 {
                     this.HandleTrail(this.player.trail, this.baseTrail, this.player, this.baseRenderer.bounds.size);
                 }
                 player.updateTrail = false;
-            }
+            //}
         }
 
         private void HandleTrail(List<GameObject> trail, GameObject baseTrail, 
@@ -62,32 +63,31 @@ namespace Gameplay
         {
             if (player.directionsMatch)
             {
-                TestUtil.Log("Updating Trail: " + logCount);
-                GameObject lastTrail = trail[trail.Count - 1];
+                //TestUtil.Log("Updating Trail: " + logCount);
+                GameObject lastTrail = trail[^1];
                 this.UpdateLastTrail(lastTrail, player.bufferDir, size);
+                //TestUtil.Log("Updating Trail: {0}  POS: {1}", logCount, lastTrail.transform.position);
             }
             else
             {
-                TestUtil.Log("Creating Trail: " + logCount);
-                this.CreateTrail(trail, baseTrail, player.transform.position);
+                //TestUtil.Log("Creating Trail: " + logCount);
+                this.CreateTrail(trail, baseTrail, player.newTrailPos);
+                TestUtil.Log("Creating Trail: {0}  POS: {1}", logCount, player.newTrailPos);
             }
             logCount++;
         }
 
         private void CreateTrail(List<GameObject> trail, GameObject baseTrail, Vector3 position)
         {
-            if (trail[^1] is GameObject lastTrail && lastTrail.transform.position != position)
-            {
-                GameObject newTrail = Instantiate<GameObject>(baseTrail);
-                newTrail.transform.position = position;
-                newTrail.GetComponent<SpriteRenderer>().enabled = true;
-                Collider2D newCollider = newTrail.GetComponent<Collider2D>();
-                newCollider.enabled = true;
-                Physics2D.IgnoreCollision(lastTrail.GetComponent<Collider2D>(), playerCollider, false);
-                Physics2D.IgnoreCollision(newCollider, playerCollider);
+            GameObject newTrail = MonoBehaviour.Instantiate<GameObject>(baseTrail);
+            newTrail.transform.position = position;
+            newTrail.GetComponent<SpriteRenderer>().enabled = true;
+            Collider2D newCollider = newTrail.GetComponent<Collider2D>();
+            Physics2D.IgnoreCollision(trail[^1].GetComponent<Collider2D>(), playerCollider, false);
+            Physics2D.IgnoreCollision(newCollider, playerCollider);
+            newCollider.enabled = true;
 
-                trail.Add(newTrail);
-            }
+            trail.Add(newTrail);
         }
 
         /// <summary>
